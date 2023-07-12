@@ -19,6 +19,8 @@ import io.debezium.examples.outbox.order.model.EntityNotFoundException;
 import io.debezium.examples.outbox.order.model.OrderLineStatus;
 import io.debezium.examples.outbox.order.model.PurchaseOrder;
 import io.debezium.outbox.quarkus.ExportedEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An application-scoped bean that facilitates {@link PurchaseOrder} business functionality.
@@ -27,6 +29,7 @@ import io.debezium.outbox.quarkus.ExportedEvent;
  */
 @ApplicationScoped
 public class OrderService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrderService.class);
 
     @PersistenceContext
     EntityManager entityManager;
@@ -46,7 +49,9 @@ public class OrderService {
 
         // Fire events for newly created PurchaseOrder
         event.fire(OrderCreatedEvent.of(order));
+        LOGGER.info("Fire OrderCreatedEvent for newly created PurchaseOrder {}",order.getId());
         event.fire(InvoiceCreatedEvent.of(order));
+        LOGGER.info("Fire InvoiceCreatedEvent for newly created PurchaseOrder {}",order.getId());
 
         return order;
     }
@@ -68,6 +73,7 @@ public class OrderService {
 
         OrderLineStatus oldStatus = order.updateOrderLine(orderLineId, newStatus);
         event.fire(OrderLineUpdatedEvent.of(orderId, orderLineId, newStatus, oldStatus));
+        LOGGER.info("Fire OrderLineUpdatedEvent for PurchaseOrder {}",order.getId());
 
         return order;
     }
