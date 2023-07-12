@@ -26,6 +26,12 @@ services:
     image: quay.io/debezium/example-postgres:${DEBEZIUM_VERSION}
     ports:
      - 5433:5432
+    healthcheck:
+      test: "pg_isready -U postgresuser -d orderdb"
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     environment:
      - POSTGRES_USER=postgresuser
      - POSTGRES_PASSWORD=postgrespw
@@ -35,6 +41,12 @@ services:
     image: quay.io/debezium/example-postgres:${DEBEZIUM_VERSION}
     ports:
       - 5434:5432
+    healthcheck:
+      test: "pg_isready -U postgresuser -d shipmentdb"
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     environment:
       - POSTGRES_USER=postgresuser
       - POSTGRES_PASSWORD=postgrespw
@@ -51,6 +63,7 @@ services:
     ports:
       - "${PGADMIN_PORT:-5050}:80"
   connect:
+    #TODO rename
     image: debezium/strimzi-connect
     build:
       context: debezium-strimzi
@@ -71,6 +84,9 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - OTEL_TRACES_SAMPLER=always_on
       - OTEL_INSTRUMENTATION_KAFKA_ENABLED="false"
+    depends_on:
+      kafka:
+        condition: service_started
   order-service:
     image: debezium-examples/outbox-order-service:${DEBEZIUM_VERSION}
     build:
@@ -85,11 +101,11 @@ services:
     environment:
      - QUARKUS_DEBEZIUM_OUTBOX_REMOVE_AFTER_INSERT=false
      - QUARKUS_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4317
-#    depends_on:
-#      order-db:
-#        condition: service_healthy
-#      connect:
-#        condition: service_started
+    depends_on:
+      order-db:
+        condition: service_healthy
+      connect:
+        condition: service_started
     command: "./application -Dquarkus.datasource.jdbc.url=jdbc:postgresql://order-db:5432/orderdb?currentSchema=inventory -Dquarkus.datasource.username=postgresuser -Dquarkus.datasource.password=postgrespw"
   shipment-service:
     image: debezium-examples/outbox-shipment-service:${DEBEZIUM_VERSION}
@@ -102,8 +118,8 @@ services:
      - jaeger
     environment:
       - QUARKUS_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4317
-#    depends_on:
-#      shipment-db:
-#        condition: service_healthy
-#      connect:
-#        condition: service_started
+    depends_on:
+      shipment-db:
+        condition: service_healthy
+      connect:
+        condition: service_started
