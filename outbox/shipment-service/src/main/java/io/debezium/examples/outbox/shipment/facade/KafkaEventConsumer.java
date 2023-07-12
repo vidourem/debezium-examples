@@ -7,6 +7,8 @@ package io.debezium.examples.outbox.shipment.facade;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -51,6 +53,12 @@ public class KafkaEventConsumer {
                     String eventId = getHeaderAsString(message, "id");
                     String eventType = getHeaderAsString(message, "eventType");
 
+                    span.setAttribute("eventId",eventId);
+                    span.setAttribute("eventType",eventType);
+                    span.setAttribute("key",message.getKey());
+                    span.setAttribute("payload",message.getPayload());
+                    String timestamp = message.getTimestamp().atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
+                    span.setAttribute("timestamp", timestamp);
                     orderEventHandler.onOrderEvent(
                             UUID.fromString(eventId),
                             eventType,
@@ -60,11 +68,11 @@ public class KafkaEventConsumer {
                     );
 
                     message.ack();
-                    span.addEvent("ack");
+                    span.addEvent("message ack");
                 }
                 catch (Exception e) {
                     LOG.error("Error while preparing shipment");
-                    span.addEvent("Error while preparing shipment");
+                    span.recordException(e);
                     throw e;
                 }
                 finally {
