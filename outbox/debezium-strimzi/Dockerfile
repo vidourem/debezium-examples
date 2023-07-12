@@ -1,9 +1,13 @@
-ARG DEBEZIUM_VERSION=2.3
+ARG DEBEZIUM_VERSION=2.4
 
 FROM quay.io/debezium/connect:$DEBEZIUM_VERSION
 
-ENV KAFKA_CONNECT_SHARE_JAVA_PATH=/kafka/libs
-ENV KAFKA_OPTS="-javaagent:/opentelemetry-javaagent-1.23.0.jar"
+ENV KAFKA_CONNECT_SHARE_JAVA_PATH=/kafka/libs \
+    OPENTELEMETRY_VERSION=1.23.1 \
+    OPENTELEMETRY_INSTRUMENTATION_VERSION=1.23.0 \
+    OPENTELEMETRY_JAVAAGENT=1.23.0
+
+ENV KAFKA_OPTS="-javaagent:/opentelemetry-javaagent-${OPENTELEMETRY_JAVAAGENT}.jar"
 
 #TODO change to curl
 COPY "debezium-interceptor-2.4.0-SNAPSHOT.jar" $KAFKA_CONNECT_SHARE_JAVA_PATH
@@ -14,17 +18,24 @@ COPY "debezium-connector-postgres-2.4.0-SNAPSHOT-plugin.tar.gz" .
 
 USER root
 
-#TODO move to container image
+#TODO move to container image ?
 RUN set -eux; \
-    curl -sSL -o /opentelemetry-javaagent-1.23.0.jar https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.23.0/opentelemetry-javaagent.jar; \
-    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-api-1.23.1.jar https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-api/1.23.1/opentelemetry-api-1.23.1.jar; \
-    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-context-1.23.1.jar https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-context/1.23.1/opentelemetry-context-1.23.1.jar; \
-    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-instrumentation-api-1.23.0.jar https://repo1.maven.org/maven2/io/opentelemetry/instrumentation/opentelemetry-instrumentation-api/1.23.0/opentelemetry-instrumentation-api-1.23.0.jar; \
-    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-instrumentation-api-semconv-1.23.0-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/instrumentation/opentelemetry-instrumentation-api-semconv/1.23.0-alpha/opentelemetry-instrumentation-api-semconv-1.23.0-alpha.jar; \
-    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-kafka-clients-2.6-1.23.0-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/instrumentation/opentelemetry-kafka-clients-2.6/1.23.0-alpha/opentelemetry-kafka-clients-2.6-1.23.0-alpha.jar; \
-    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-kafka-clients-common-1.23.0-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/instrumentation/opentelemetry-kafka-clients-common/1.23.0-alpha/opentelemetry-kafka-clients-common-1.23.0-alpha.jar; \
-    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-semconv-1.23.1-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-semconv/1.23.1-alpha/opentelemetry-semconv-1.23.1-alpha.jar; \
-    chmod 666 ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-api-1.23.1.jar ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-context-1.23.1.jar ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-instrumentation-api-${OTEL_VERSION}.jar ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-instrumentation-api-semconv-${OTEL_VERSION}-alpha.jar ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-kafka-clients-2.6-${OTEL_VERSION}-alpha.jar ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-kafka-clients-common-${OTEL_VERSION}-alpha.jar ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-semconv-1.23.1-alpha.jar $KAFKA_CONNECT_SHARE_JAVA_PATH/debezium-interceptor-2.4.0-SNAPSHOT.jar;
+    curl -sSL -o /opentelemetry-javaagent-${OPENTELEMETRY_JAVAAGENT}.jar https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OPENTELEMETRY_JAVAAGENT}/opentelemetry-javaagent.jar; \
+    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-api-${OPENTELEMETRY_VERSION}.jar https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-api/${OPENTELEMETRY_VERSION}/opentelemetry-api-${OPENTELEMETRY_VERSION}.jar; \
+    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-context-${OPENTELEMETRY_VERSION}.jar https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-context/${OPENTELEMETRY_VERSION}/opentelemetry-context-${OPENTELEMETRY_VERSION}.jar; \
+    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-semconv-${OPENTELEMETRY_VERSION}-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-semconv/${OPENTELEMETRY_VERSION}-alpha/opentelemetry-semconv-${OPENTELEMETRY_VERSION}-alpha.jar; \
+    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-instrumentation-api-${OPENTELEMETRY_INSTRUMENTATION_VERSION}.jar https://repo1.maven.org/maven2/io/opentelemetry/instrumentation/opentelemetry-instrumentation-api/${OPENTELEMETRY_INSTRUMENTATION_VERSION}/opentelemetry-instrumentation-api-${OPENTELEMETRY_INSTRUMENTATION_VERSION}.jar; \
+    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-instrumentation-api-semconv-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/instrumentation/opentelemetry-instrumentation-api-semconv/${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha/opentelemetry-instrumentation-api-semconv-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar; \
+    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-kafka-clients-2.6-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/instrumentation/opentelemetry-kafka-clients-2.6/${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha/opentelemetry-kafka-clients-2.6-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar; \
+    curl -sSL -o ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-kafka-clients-common-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/instrumentation/opentelemetry-kafka-clients-common/${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha/opentelemetry-kafka-clients-common-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar; \
+    chmod 666 ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-api-${OPENTELEMETRY_VERSION}.jar \
+    ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-context-${OPENTELEMETRY_VERSION}.jar  \
+    ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-semconv-${OPENTELEMETRY_VERSION}-alpha.jar  \
+    ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-instrumentation-api-${OPENTELEMETRY_INSTRUMENTATION_VERSION}.jar  \
+    ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-instrumentation-api-semconv-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar  \
+    ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-kafka-clients-2.6-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar  \
+    ${KAFKA_CONNECT_SHARE_JAVA_PATH}/opentelemetry-kafka-clients-common-${OPENTELEMETRY_INSTRUMENTATION_VERSION}-alpha.jar  \
+    ${KAFKA_CONNECT_SHARE_JAVA_PATH}/debezium-interceptor-2.4.0-SNAPSHOT.jar;
 
 #TODO change to curl
 RUN set -eux; \
