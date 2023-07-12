@@ -63,13 +63,18 @@ public class OrderEventHandler {
         JsonNode eventPayload;
 
         try {
-            String unescaped = objectMapper.readValue(event, String.class);
-            eventPayload = objectMapper.readTree(unescaped);
-        }
-        catch (IOException e) {
+            JsonNode rootNode = objectMapper.readTree(event);
+
+            if (rootNode.has("schema")) {
+                String payload = rootNode.get("payload").asText();
+                eventPayload = objectMapper.readTree(payload);
+            } else {
+                eventPayload = rootNode;
+            }
+        } catch (IOException e) {
             throw new RuntimeException("Couldn't deserialize event", e);
         }
 
-        return eventPayload.has("schema") ? eventPayload.get("payload") : eventPayload;
+        return eventPayload;
     }
 }
