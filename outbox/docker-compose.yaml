@@ -9,13 +9,13 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
   zookeeper:
-    image: quay.io/debezium/zookeeper:${DEBEZIUM_VERSION}
+    image: localhost:5500/debezium/zookeeper:${DEBEZIUM_VERSION}
     ports:
      - 2181:2181
      - 2888:2888
      - 3888:3888
   kafka:
-    image: quay.io/debezium/kafka:${DEBEZIUM_VERSION}
+    image: localhost:5500/debezium/kafka:${DEBEZIUM_VERSION}
     ports:
      - 9092:9092
     links:
@@ -23,7 +23,7 @@ services:
     environment:
      - ZOOKEEPER_CONNECT=zookeeper:2181
   order-db:
-    image: quay.io/debezium/example-postgres:${DEBEZIUM_VERSION}
+    image: localhost:5500/debezium/example-postgres:${DEBEZIUM_VERSION}
     ports:
      - 5433:5432
     healthcheck:
@@ -38,7 +38,7 @@ services:
      - POSTGRES_DB=orderdb
      - PGPASSWORD=postgrespw
   shipment-db:
-    image: quay.io/debezium/example-postgres:${DEBEZIUM_VERSION}
+    image: localhost:5500/debezium/example-postgres:${DEBEZIUM_VERSION}
     ports:
       - 5434:5432
     healthcheck:
@@ -78,6 +78,7 @@ services:
       - CONFIG_STORAGE_TOPIC=my-connect-configs
       - OFFSET_STORAGE_TOPIC=my-connect-offsets
       - STATUS_STORAGE_TOPIC=my_connect_statuses
+      - CONNECT_PRODUCER_INTERCEPTOR_CLASSES=io.debezium.tracing.DebeziumTracingProducerInterceptor
       - OTEL_SERVICE_NAME=kafka-connect
       - OTEL_TRACES_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
